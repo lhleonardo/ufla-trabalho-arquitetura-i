@@ -62,20 +62,25 @@ void BuscaInstrucao(){
     // IR = Mem[PC>>1];
     int result;
     switch(Mem->getInstruction(*Mem, PC, &result)) {
-        case 1:
-            hitL1d++; break;
-        case 2:
+        case 1: {
+            hitL1i++; break;
+        }
+        case 2: {
             hitL2++; break;
-        case 3:
+        }
+        case 3: {
             hitL3++; break;
-        case 4:
+        }
+        case 4: {
             hitMemory++; break;
-        default:
+        }
+        default: {
             erros++; break;
+        }
     };
     IR = converterParaShort(PC, result);
     //Escrita no arquivo da leitura de instrucao
-    out << "ri 0x" << std::hex << PC << endl;
+    out << "ri 0x" << std::hex << IR << endl;
 }
 
 //Funcao de Decodificacao da Instrucao
@@ -224,10 +229,17 @@ void Decodificacao(){
             switch(IR & 0xBF00){
                 case(0xBD00):// POP COM PC
                     acabou = true;  //caso a instrução seja POP de PC, parar a execução do programa
+
                     break;
 
                 case (0xBC00): // pop sem pc
                     acabou = true;
+                    break;
+
+                case(0xB500):// PUSH COM LR
+                    break;
+
+                case(0xB400): // PUSH SEM LR
                     break;
                 case(0xB000):
                     switch(IR & 0xB080){
@@ -328,18 +340,22 @@ void ExeMem() {
         case 3://STR, STRH
             result = (A+B);
             // Mem[result>>1] = *D;
-            switch(Mem->setData(*Mem, *Mem->mainMemory, result << 1, *D)) {
-                case 1:
-                    cout << "hit de l1d ao realizar STR, STRH" << endl;
+            switch(Mem->setData(*Mem, *Mem->mainMemory, result, *D)) {
+                case 1: {
                     hitL1d++; break;
-                case 2:
+                }
+                case 2: {
                     hitL2++; break;
-                case 3:
+                }
+                case 3: {
                     hitL3++; break;
-                case 4:
+                }
+                case 4: {
                     hitMemory++; break;
-                default:
+                }
+                default: {
                     erros++; break;
+                }
             };
             out << "wd 0x" << std::hex << result << endl;
             break;
@@ -348,20 +364,24 @@ void ExeMem() {
             // no trabalho de 20172 e conversão para short
             // após a busca
             int resultado;
-            switch(Mem->getData(*Mem, (A+B) << 1, &resultado)) {
-                case 1:
-                    cout << "hit em L1d de LDR" << endl;
+            switch(Mem->getData(*Mem, (A+B), &resultado)) {
+                case 1: {
                     hitL1d++; break;
-                case 2:
+                }
+                case 2: {
                     hitL2++; break;
-                case 3:
+                }
+                case 3: {
                     hitL3++; break;
-                case 4:
+                }
+                case 4: {
                     hitMemory++; break;
-                default:
+                }
+                default: {
                     erros++; break;
+                }
             };
-            result = short(resultado);
+            result = converterParaShort((A+B), resultado);
             // result = Mem[((A+B)>>1)];
             out << "rd 0x" << std::hex << (A+B) << endl;
             break;
@@ -405,17 +425,14 @@ void EscritaRegistrador() {
 }
 
 //Programa Principal
-int main() {
+int main(int argc, char* argv[]) {
     //Limpando o terminal para a execucao do programa
-    system("clear");
-    system("clear");
-    cout << "Escreva o nome do arquivo de simulação: ";
-    string nomeArq, nomeArqMem;
 
-    cin >> nomeArq;
-    cout << "Escreva o nome do arquivo de hierarquia de memória:";
-
-    cin >> nomeArqMem;
+    if (argc < 3) {
+        cerr << "Uso: " << endl;
+        cerr << argv[0] << " hierarquia simulação" << endl; 
+        exit(0);
+    }
 
     // variaveis necessarias para a execucao do arquivo
     SACache *l1d, *l1i, *l2, *l3;
@@ -424,7 +441,7 @@ int main() {
     
     Processor *processador;
 
-    ifstream arqMem(nomeArqMem);
+    ifstream arqMem(argv[1]);
     string comando;
     arqMem >> comando;
     int c, a, l, ramsize, vmsize, n;
@@ -473,15 +490,17 @@ int main() {
 
     arqMem.close();
 
-    ifstream instrucoes(nomeArq);
+    ifstream instrucoes(argv[2]);
 
     unsigned short reader;
     //Leitura do arquivo e carregamento para a memória
-    int cont = 0;
+    short cont = 0;
     while(!instrucoes.eof()){
-        instrucoes.read(reinterpret_cast<char*> (&reader), sizeof(unsigned short));
-        mp->setMainMemoryData(*mp, cont++, reader);
+        instrucoes.read(reinterpret_cast<char*> (&reader), sizeof(short));
+        mp->vetor[cont++] = reader;
     }
+
+    cout << endl;
     instrucoes.close();
 
     //Execucao dos estagios da maquina
