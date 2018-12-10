@@ -475,6 +475,25 @@ class Memory { // classe utilizada para implementacao da hierarquia de memoria
             return ret;
         }
         
+        int setShortData(Memory &mem, int address, unsigned short value) { // metodo que escreve dado na hierarquia de memoria
+            int i;
+            int valInt = (int)value;
+           
+            int ret = getData(mem,address,&i);
+            
+            // setar a metade correta 
+            if ((address & 0x3) == 0) {
+                valInt = valInt << 16;
+                i = (i & 0x0000FFFF) | valInt;
+            } else {
+                i = (i & 0xFFFF0000) | valInt;
+            }
+            
+            mem.cache->setCacheData(*mem.cache, *mem.mainMemory, address, i);
+            mem.mainMemory->setMainMemoryData(*mem.mainMemory, address, i);
+            return ret;
+        }
+        
         int setInstruction(Memory &mem, MainMemory &mmem, int address, int value) { // metodo que escreve instrucao na hierarquia de memoria
             int ret = mem.cache->setCacheInstruction(*mem.cache, mmem, address, value);
             mem.mainMemory->setMainMemoryData(*mem.mainMemory, address, value);
@@ -509,6 +528,19 @@ class Processor { // classe utilizada para implementacao do processador
             return proc;
         }
 };
+
+unsigned short converterParaShort(unsigned short endereco, int value) {
+  unsigned short ret;
+  if((endereco & 0x3) != 0) { 
+    // se o endereco for multiplo de 4
+    // pega os 16 bits mais significativos
+    ret = (unsigned short) ((value >> 16) & 0xFFFF);
+  } else {
+    // senao, pega os 16 bits menos significativos
+    ret = (unsigned short) (value & 0xFFFF);
+  }
+  return ret;
+}
 
 // int main()
 // {

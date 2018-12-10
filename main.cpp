@@ -44,19 +44,6 @@ unsigned hitL3 = 0;
 unsigned hitMemory = 0;
 unsigned erros = 0;
 
-unsigned short converterParaShort(unsigned short endereco, int value) {
-  unsigned short ret;
-  if((endereco & 0x3) == 0) { 
-    // se o endereco for multiplo de 4
-    // pega os 16 bits mais significativos
-    ret = (unsigned short) ((value >> 16) & 0xFFFF);
-  } else {
-    // senao, pega os 16 bits menos significativos
-    ret = (unsigned short) (value & 0xFFFF);
-  }
-  return ret;
-}
-
 //Funcao de Busca da Instrucao
 void BuscaInstrucao(){
     // IR = Mem[PC>>1];
@@ -228,19 +215,20 @@ void Decodificacao(){
         case(0xA000):
             switch(IR & 0xBF00){
                 case(0xBD00):// POP COM PC
-                    acabou = true;  //caso a instrução seja POP de PC, parar a execução do programa
-
-                    break;
-
-                case (0xBC00): // pop sem pc
-                    acabou = true;
+                    A = r
+                    B = 
+                    execode = 
+                    wb = 
                     break;
 
                 case(0xB500):// PUSH COM LR
+                    A =
+                    B =
+                    D = 
+                    execode = 
+                    wb = 
                     break;
 
-                case(0xB400): // PUSH SEM LR
-                    break;
                 case(0xB000):
                     switch(IR & 0xB080){
                         case(0xB000)://INSTRUCAO ADD RELACIONADA AO SP
@@ -315,7 +303,6 @@ void Decodificacao(){
                 //a execucao é encerrada
             acabou = true;
             break;
-        
     }
 }
 
@@ -340,7 +327,7 @@ void ExeMem() {
         case 3://STR, STRH
             result = (A+B);
             // Mem[result>>1] = *D;
-            switch(Mem->setData(*Mem, *Mem->mainMemory, result, *D)) {
+            switch(Mem->setShortData(*Mem, result, *D)) {
                 case 1: {
                     hitL1d++; break;
                 }
@@ -495,9 +482,10 @@ int main(int argc, char* argv[]) {
     unsigned short reader;
     //Leitura do arquivo e carregamento para a memória
     short cont = 0;
+    unsigned short *memoria = (unsigned short *) mp->vetor;
     while(!instrucoes.eof()){
         instrucoes.read(reinterpret_cast<char*> (&reader), sizeof(short));
-        mp->vetor[cont++] = reader;
+        memoria[cont++] = reader;
     }
 
     cout << endl;
