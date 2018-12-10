@@ -22,7 +22,18 @@ unsigned short IR;
 unsigned short LR;
 unsigned short SP = 32767;
 unsigned short reg[8];
-unsigned short A,B; 
+unsigned short A,B;
+
+// vetor para conter os valores 
+// do intervalo de registradores 
+// para as funções push e pop 
+// sempre vai conter, no maximo, 9
+// posições, incluindo LR e PC.
+unsigned short vetor[8]; 
+// cada byte representa se o registrador
+// naquele indice está incluso em 'vetor'
+int registradoresInclusos;
+
 unsigned short *D;
 unsigned short result;
 //Declaracao das variaveis de controle
@@ -100,7 +111,7 @@ void Decodificacao(){
                     wb = true;
                     break;
                 case(0x1A00)://INSTRUCAO SUB PARA DOIS REGISTRADORES
-                    B = reg[(IR & 0x01C0) >> 6]; 
+                    B = reg[(IR & 0x01C0) >>  6]; 
                     A = reg[(IR & 0x0038) >> 3]; 
                     D = &reg[(IR & 0x0007)];
                     execode = 1;
@@ -215,20 +226,39 @@ void Decodificacao(){
         case(0xA000):
             switch(IR & 0xBF00){
                 case(0xBD00):// POP COM PC
-                    A = r
-                    B = 
-                    execode = 
-                    wb = 
-                    break;
+                    registradoresInclusos = IR & 0x00FF;
+                    
+                    // encontra os registradores inclusos no pop
+                    if (registradoresInclusos & 0x1) vetor[0] = reg[0];
+                    if (registradoresInclusos & 0x2) vetor[1] = reg[1];
+                    if (registradoresInclusos & 0x4) vetor[2] = reg[2];
+                    if (registradoresInclusos & 0x8) vetor[3] = reg[3];
+                    if (registradoresInclusos & 0x10) vetor[4] = reg[4];
+                    if (registradoresInclusos & 0x20) vetor[5] = reg[5];
+                    if (registradoresInclusos & 0x40) vetor[6] = reg[6];
+                    if (registradoresInclusos & 0x80) vetor[7] = reg[7];
 
+                    execode = 11;
+                    wb = true;
+
+                    break;
                 case(0xB500):// PUSH COM LR
-                    A =
-                    B =
-                    D = 
-                    execode = 
-                    wb = 
-                    break;
+                    registradoresInclusos = IR & 0x00FF;
+                    
+                    // encontra os registradores inclusos no pop
+                    if (registradoresInclusos & 0x1) vetor[0] = reg[0];
+                    if (registradoresInclusos & 0x2) vetor[1] = reg[1];
+                    if (registradoresInclusos & 0x4) vetor[2] = reg[2];
+                    if (registradoresInclusos & 0x8) vetor[3] = reg[3];
+                    if (registradoresInclusos & 0x10) vetor[4] = reg[4];
+                    if (registradoresInclusos & 0x20) vetor[5] = reg[5];
+                    if (registradoresInclusos & 0x40) vetor[6] = reg[6];
+                    if (registradoresInclusos & 0x80) vetor[7] = reg[7];
 
+                    execode = 12;
+                    wb = false;
+
+                    break;
                 case(0xB000):
                     switch(IR & 0xB080){
                         case(0xB000)://INSTRUCAO ADD RELACIONADA AO SP
@@ -280,25 +310,43 @@ void Decodificacao(){
                     }
             }
             break;
-        case(0xE000)://INSTRUCAO B(branch)
-            //Decidimos dividir a decodificacao ente offset positivo
-            //e offset negativo
+        case(0xE000)://Conjuntos de instruções Branch (B)
             {
-                //BRANCH COM OFFEST NEGATIVO
-                signed short aux = ((IR & 0x07FF) << 1);
-                if(aux < 0){
-                    signed short aneg = 0xF000 | aux;
-                    A = -aneg;
-                    execode = 10;
-                } else{
-                    //BRANCH COM OFFEST POSITIVO
-                    A = aux;
-                    execode = 7;
+                switch (IR & 0xF000) {
+                    case (0xE000): { // B
+                        //Decidimos dividir a decodificacao ente offset positivo
+                        //e offset negativo
+
+                        //BRANCH COM OFFEST NEGATIVO
+                        signed short aux = ((IR & 0x07FF) << 1);
+                        if(aux < 0){
+                            signed short aneg = 0xF000 | aux;
+                            A = -aneg;
+                            execode = 10;
+                        } else{
+                            //BRANCH COM OFFEST POSITIVO
+                            A = aux;
+                            execode = 7;
+                        }
+                        wb = false;
+                        branch = true;
+                        break;
+                    }
+                    case (0xF000): { // BL
+                        A = (IR & 0x07FF); // extrair dados independente dos bit de offset
+                        if(IR & 0x0800) 
+                            execode = 13; // PC recebe desvio caso offset seja 0
+                        else
+                            execode = 14; // LR recebe desvio caso offset seja 1
+                        
+                        branch = true;
+                        break;
+                    }
                 }
-                wb = false;
-                branch = true;
+                break;                
             }
-            break;
+            break;    
+
         default://Caso o programa leia uma instrucao não implementada,
                 //a execucao é encerrada
             acabou = true;
@@ -400,13 +448,59 @@ void ExeMem() {
         case 10://B COM OFFSET NEGATIVO
             PC = PC - A + 4;
             break;
+        case 11: { // POP COM LR
+            unsigned short *memoria = (unsigned short *) Mem->mainMemory->vetor;
+
+            if (registradoresInclusos & 0x1) vetor[0] = memoria[SP++];
+            if (registradoresInclusos & 0x2) vetor[1] = memoria[SP++];
+            if (registradoresInclusos & 0x4) vetor[2] = memoria[SP++];
+            if (registradoresInclusos & 0x8) vetor[3] = memoria[SP++];
+            if (registradoresInclusos & 0x10) vetor[4] = memoria[SP++];
+            if (registradoresInclusos & 0x20) vetor[5] = memoria[SP++];
+            if (registradoresInclusos & 0x40) vetor[6] = memoria[SP++];
+            if (registradoresInclusos & 0x80) vetor[7] = memoria[SP++];
+            
+            break;
+        } 
+        case 12: { // PUSH COM PC
+            unsigned short *memoria = (unsigned short *) Mem->mainMemory->vetor;
+
+            if (registradoresInclusos & 0x1) memoria[SP--] = vetor[0];
+            if (registradoresInclusos & 0x2) memoria[SP--] = vetor[1];
+            if (registradoresInclusos & 0x4) memoria[SP--] = vetor[2];
+            if (registradoresInclusos & 0x8) memoria[SP--] = vetor[3];
+            if (registradoresInclusos & 0x10) memoria[SP--] = vetor[4];
+            if (registradoresInclusos & 0x20) memoria[SP--] = vetor[5];
+            if (registradoresInclusos & 0x40) memoria[SP--] = vetor[6];
+            if (registradoresInclusos & 0x80) memoria[SP--] = vetor[7];
+
+            break;
+        }
+        case 13:
+            PC = A;
+            break;
+        case 14:
+            LR = A;
+            break;
+        
     }
 }
 
 //Funcao de Write Back
 void EscritaRegistrador() {
     if(wb){
-        *D = result;
+        if (execode == 11) {
+            if (registradoresInclusos & 0x1) reg[0] = vetor[0];
+            if (registradoresInclusos & 0x2) reg[1] = vetor[1];
+            if (registradoresInclusos & 0x4) reg[2] = vetor[2];
+            if (registradoresInclusos & 0x8) reg[3] = vetor[3];
+            if (registradoresInclusos & 0x10) reg[4] = vetor[4];
+            if (registradoresInclusos & 0x20) reg[5] = vetor[5];
+            if (registradoresInclusos & 0x40) reg[6] = vetor[6];
+            if (registradoresInclusos & 0x80) reg[7] = vetor[7];
+        } else {
+            *D = result;
+        }
         wb = false;
     }
 }
@@ -426,12 +520,11 @@ int main(int argc, char* argv[]) {
     MainMemory *mp;
     Cache *cache;
     
-    Processor *processador;
 
     ifstream arqMem(argv[1]);
     string comando;
     arqMem >> comando;
-    int c, a, l, ramsize, vmsize, n;
+    int c, a, l, ramsize, vmsize;
     
     int aux = 0;
     if (comando == "cl1d") {
@@ -511,8 +604,8 @@ int main(int argc, char* argv[]) {
         //Atualizacao do controle de branch
         branch = false;
     }
-
     out.close();
+
     
     cout << "Resultado das operações:" << endl;
     cout << "L1d: " << hitL1d << endl;
@@ -521,6 +614,9 @@ int main(int argc, char* argv[]) {
     cout << "L3: " << hitL3 << endl;
     cout << "LMem: " << hitMemory << endl;
     cout << "erros: " << erros << endl;
+    cout << endl;
+    
+    cout << "Total: " << (hitL1i + hitL1d + 2*hitL2 + 3*hitL3 + 10*hitMemory) << endl;
 
     return 0;
 }
