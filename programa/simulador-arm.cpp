@@ -7,6 +7,7 @@
 */
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <cstdlib>
 
@@ -507,10 +508,12 @@ void EscritaRegistrador() {
 
 //Programa Principal
 int main(int argc, char* argv[]) {
-    //Limpando o terminal para a execucao do programa
-
     if (argc < 3) {
-        cerr << "Uso: " << endl;
+        cerr << "Parâmetros inconsistentes... Para utilização deste programa, " << endl;
+        cerr << "é necessário informar os arquivos que inicializa a memória " << endl;
+        cerr << "cache e as instruções a serem executadas." << endl;
+        cerr << endl;
+        cerr << "Exemplo de uso: " << endl;
         cerr << argv[0] << " hierarquia simulação" << endl; 
         exit(0);
     }
@@ -580,8 +583,6 @@ int main(int argc, char* argv[]) {
         instrucoes.read(reinterpret_cast<char*> (&reader), sizeof(short));
         memoria[cont++] = reader;
     }
-
-    cout << endl;
     instrucoes.close();
 
     //Execucao dos estagios da maquina
@@ -607,16 +608,15 @@ int main(int argc, char* argv[]) {
     out.close();
 
     
-    cout << "Resultado das operações:" << endl;
-    cout << "L1d: " << hitL1d << endl;
-    cout << "L1i: " << hitL1i << endl;
-    cout << "L2: " << hitL2 << endl;
-    cout << "L3: " << hitL3 << endl;
-    cout << "LMem: " << hitMemory << endl;
-    cout << "erros: " << erros << endl;
-    cout << endl;
-    
-    cout << "Total: " << (hitL1i + hitL1d + 2*hitL2 + 3*hitL3 + 10*hitMemory) << endl;
+    cout << "Relação de Hits em memórias:" << endl;
+    cout << setw(30) << left << "\tCache L1 de dados: " << hitL1d << endl;
+    cout << setw(32) << left << "\tCache L1 de instruções: " << hitL1i << endl;
+    cout << setw(30) << left << "\tCache L2: " << hitL2 << endl;
+    cout << setw(30) << left << "\tCache L3: " << hitL3 << endl;
+    cout << setw(31) << left << "\tMemória principal: " << hitMemory << endl;
+    cout << setw(37) << left << "Miss (totalizado):" << erros << endl;
+    cout << "Tempos de processamento (em hits): " 
+         << (hitL1i + hitL1d + 2*hitL2 + 3*hitL3 + 10*hitMemory) << endl;
 
     return 0;
 }

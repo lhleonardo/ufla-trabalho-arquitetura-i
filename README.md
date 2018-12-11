@@ -2,7 +2,26 @@
 
 Arquivos do trabalho de arquitetura do professor André Saúde, para a disciplina de Arquitetura de Computadores.
 
-## Enunciado
+## Grupo
+* Guilherme Barbosa Ochikubo
+* Guilherme Henrique de Melo
+* Leonardo Henrique de Braz
+
+## Detalhes
+Este trabalho possui um analisador de execução a partir dos parâmetros informados. Ele foi feito para receber o programa responsável por ser o simulador tARM, utilizando uma hierarquia de cache inicializável e também um conjunto de instruções compiladas em linguagem de máquina para simulação de uma arquitetura 16 bits. 
+
+## Utilização
+Para utilizar o simulador, basta:
+* Possuir o executável do simulador tARM;
+* Possuir os arquivos de hierarquia de cache (são necessários dois para comparações);
+* Possuir o arquivo de instruções
+
+Para executar:
+* Compilar o representante ao simulador tARM (dentro da pasta **programa**): ` g++ programa/simulador-arm.cpp -o path-executavel-arm`;
+* Compilar o avaliador de performance: `g++ avaliador-performance path-avaliador`
+* Executar o programa: `./path-avaliador path-executavel-arm path-hierarquia1 path-hierarquia2 path-instrucoes`
+
+## Problema/objetivo
 Objetivo: Juntar o trabalho de 2017/2 com o trabalho de 2018/1 para fazer um comparador de performance de dois computadores com distintas configurações de cache.
 
 Sugestão de ordem de execução do trabalho:
