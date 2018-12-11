@@ -37,3 +37,54 @@ Sugestão de ordem de execução do trabalho:
 9) Estender estágio de decodificação da instrução para atender a todas as instruções presentes no programa summationfun.o, começando pelas instruções push e pop.
 
 Considerar os seguintes tempos: 1, para hit em L1; 2, para hit em L2; 3, para hit em L3; e 10, para acesso à memória principal.
+
+## Problemas encontrados
+
+### Endereçamento (por André Vital Saúde)
+
+Caros alunos, 
+
+Temos um problema de endereçamento quando vamos integrar o tARM com o SHM: o tARM é 16 bits e o SHM é 32 bits. Para resolver esta questão, explico com base no estágio de busca da instrução.
+
+O estágio de busca da instrução no tARM original é implementado desta forma:
+
+<pre>
+<code>//Funcao de Busca da Instrucao
+void BuscaInstrucao(Memory m, int v[]){
+    IR = mem[PC>>1];
+}</code></pre>
+
+O índice da memória é PC>>1 (divisão inteira de PC por 2) porque a memória é um vetor de shorts (tamanho da palavra de um computador 16 bits) e o PC é o endereço em bytes. Veja a seguinte figura:
+
+PC é um endereço em bytes, mas sempre múltiplo de 2, porque o tARM é 16 bits. A memória é um vetor de short, por isso o acesso é feito no índice PC/2.
+
+O SHM, por sua vez, está implementado para palavras de 32 bits. Portanto, conforme figura, ao ler o endereço 6, em bytes, o SHM retornará todo o inteiro de índice 1, ou seja, os 4 bytes de endereços 4, 5, 6 e 7. Ao ler o endereço 4, o mesmo inteiro de índice 1 é retornado. 
+
+Pois bem, se você quer ler o endereço 4, você quer na verdade os bytes 4 e 5, e se você quer ler o endereço 6, você quer os bytes 6 e 7. Portanto, se o endereço lido for um múltiplo de 4, você deve pegar os 16 bits mais significativos do valor retornado, e se o endereço lido não for múltiplo de 4, você deve pegar os 16 bits menos significativos.
+
+Estas considerações servem para a busca da instrução. Para acesso a dados, tudo dependeria do tipo da variável acessada, mas só consideraremos o tipo short, então as considerações acima serão assumidas também para acesso a dados.
+
+O trecho a seguir transforma o estágio de busca da instrução para o formato integrado. A função getShort poderá ser usada também para o acesso a dados.
+
+<pre><code>//Funcao de Busca da Instrucao
+void iFetch(Memory m, int hits[]){
+    int inteiro;
+    hits[m.getInstruction(m,PC,&inteiro)]++; // contabilização dos hits
+    IR = getShort(PC, inteiro); // pega o short correto
+}
+</code></pre>
+
+<pre><code> 
+unsigned short getShort(unsigned short address, int value) {
+  unsigned short ret;
+  if((address & 0x3) == 0) { 
+    // se o endereco for multiplo de 4
+    // pega os 16 bits mais significativos
+    ret = (unsigned short) ((value >> 16) & 0xFFFF);
+  } else {
+    // senao, pega os 16 bits menos significativos
+    ret = (unsigned short) (value & 0xFFFF);
+  }
+  return ret;
+}
+</code></pre>
